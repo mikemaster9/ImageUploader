@@ -1,0 +1,56 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Uploader Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/layer/3.5.1/layer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
+    <script src="ImageUploader.js"></script>
+</head>
+<body>
+    <div id="upload-container"></div>
+
+    <script>
+        $(document).ready(function() {
+            $('#upload-container').imageUploader({
+                maxCount: 5,
+                useViewer: true,
+                viewerOptions: {
+                    navbar: true,
+                    toolbar: true
+                },
+                onChange: function(images) {
+                    console.log('Images changed:', images);
+                }
+            });
+
+             // 获取实例
+        const uploader = $('#upload-container').data('imageUploader');
+
+        // 加载已有图片
+        const imageObjects = [
+            { key: 'image1.jpg', url: 'https://example.com/image1.jpg' },
+            { key: 'image2.jpg', url: 'https://example.com/image2.jpg' },
+            { key: 'image3.jpg', url: 'https://example.com/image3.jpg' }
+        ];
+        const imageObjectss = uploader.formatImageKeys('111;222;333','https://example.com/image1.jpg')
+        uploader.loadImages(imageObjectss);
+
+       
+
+        // // 获取当前图片列表
+        // const currentImages = uploader.getImageList();
+
+        // // 清空图片列表
+        // uploader.clear();
+
+        // // 销毁实例
+        // uploader.destroy();
+        });
+        
+    </script>
+</body>
+</html>
