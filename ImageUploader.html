@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,45 +10,157 @@
 </head>
 <body>
     <div id="upload-container"></div>
-
-    <script>
-        $(document).ready(function() {
-            $('#upload-container').imageUploader({
-                maxCount: 5,
-                useViewer: true,
-                viewerOptions: {
-                    navbar: true,
-                    toolbar: true
-                },
-                onChange: function(images) {
-                    console.log('Images changed:', images);
-                }
-            });
-
-             // 获取实例
-        const uploader = $('#upload-container').data('imageUploader');
-
-        // 加载已有图片
-        const imageObjects = [
-            { key: 'image1.jpg', url: 'https://example.com/image1.jpg' },
-            { key: 'image2.jpg', url: 'https://example.com/image2.jpg' },
-            { key: 'image3.jpg', url: 'https://example.com/image3.jpg' }
-        ];
-        const imageObjectss = uploader.formatImageKeys('111;222;333','https://example.com/image1.jpg')
-        uploader.loadImages(imageObjectss);
-
-       
-
-        // // 获取当前图片列表
-        // const currentImages = uploader.getImageList();
-
-        // // 清空图片列表
-        // uploader.clear();
-
-        // // 销毁实例
-        // uploader.destroy();
-        });
-        
-    </script>
 </body>
+<script>
+    $(function() {
+        // 1. 初始化插件
+        $('#upload-container').imageUploader({
+            enable: true,                // 是否启用上传按钮
+            thumbnailWidth: 50,         // 缩略图宽度
+            thumbnailHeight: 50,        // 缩略图高度
+            maxCount: 5,                // 最大上传数量
+            maxSize: 5 * 1024 * 1024,  // 最大文件大小（5MB）
+            //uploadUrl: '/upload',       // 上传接口地址
+            accept: 'image/png,image/jpeg,image/jpg', // 支持的图片格式
+            useViewer: true,           // 是否使用图片查看器
+            viewerOptions: {           // 图片查看器配置
+                navbar: true,
+                toolbar: {
+                    zoomIn: true,
+                    zoomOut: true,
+                    oneToOne: true,
+                    reset: true,
+                    prev: true,
+                    next: true,
+                }
+            },
+            onChange: function(images) {
+                console.log('图片列表变化:', images);
+            }
+        });
+
+        // 2. getImageList() - 获取当前图片列表
+        //const images = $('#upload-container').imageUploader('getImageList');
+       // console.log('当前图片列表:', images);
+        // 返回格式示例:
+        // [
+        //     { key: "image_key1", url: "http://example.com/image1.jpg" },
+        //     { key: "image_key2", url: "http://example.com/image2.jpg" }
+        // ]
+
+        // 3. clear() - 清空图片列表
+       // $('#upload-container').imageUploader('clear');
+
+        // 4. destroy() - 销毁插件实例
+       // $('#upload-container').imageUploader('destroy');
+
+        // 5. loadImages() - 加载图片列表
+        // 方式一：使用URL字符串数组
+        // $('#upload-container').imageUploader('loadImages', [
+        //     'http://example.com/image1.jpg',
+        //     'http://example.com/image2.jpg'
+        // ]);
+
+        // 方式二：使用对象数组
+        const keyString = 'image1.jpg;image2.jpg;image3.jpg';
+        const baseUrl = 'http://example.com/images/';
+        const formattedImages = $('#upload-container').imageUploader('formatImageKeys', keyString, baseUrl);
+        $('#upload-container').imageUploader('loadImages',formattedImages);
+
+        // 6. formatImageKeys() - 格式化图片键值字符串
+        // 用于将分号分隔的图片键值字符串转换为标准格式
+        // const keyString = 'image1.jpg;image2.jpg;image3.jpg';
+        // const baseUrl = 'http://example.com/images/';
+        // const formattedImages = $('#upload-container').imageUploader('formatImageKeys', keyString, baseUrl);
+        // 返回格式示例:
+        // [
+        //     { key: "image1.jpg", url: "http://example.com/images/image1.jpg" },
+        //     { key: "image2.jpg", url: "http://example.com/images/image2.jpg" },
+        //     { key: "image3.jpg", url: "http://example.com/images/image3.jpg" }
+        // ]
+
+        // 实际使用场景示例
+
+        // 场景1: 表单提交时获取图片列表
+        // $('form').on('submit', function(e) {
+        //     e.preventDefault();
+        //     const images = $('#upload-container').imageUploader('getImageList');
+        //     const imageKeys = images.map(img => img.key).join(';');
+            
+        //     // 将图片键值添加到表单数据中
+        //     $(this).append(`<input type="hidden" name="images" value="${imageKeys}">`);
+        //     this.submit();
+        // });
+
+        // 场景2: 编辑时加载已有图片
+        // function editMode(existingImages) {
+        //     $('#upload-container').imageUploader('loadImages', existingImages);
+        // }
+
+        // 场景3: 从后端接口获取图片列表并加载
+        // async function loadImagesFromServer() {
+        //     try {
+        //         const response = await fetch('/api/getImages');
+        //         const data = await response.json();
+        //         $('#upload-container').imageUploader('loadImages', data.images);
+        //     } catch (error) {
+        //         console.error('加载图片失败:', error);
+        //     }
+        // }
+
+        // 场景4: 处理后端返回的图片键值字符串
+        // function handleServerResponse(response) {
+        //     const { imageKeys } = response;
+        //     const baseUrl = 'http://cdn.example.com/images/';
+        //     const formattedImages = $('#upload-container').imageUploader('formatImageKeys', imageKeys, baseUrl);
+        //     $('#upload-container').imageUploader('loadImages', formattedImages);
+        // }
+
+        // 场景5: 重置表单时清空图片
+        // $('button[type="reset"]').on('click', function() {
+        //     $('#upload-container').imageUploader('clear');
+        // });
+
+        // 场景6: 页面卸载时清理资源
+        // $(window).on('unload', function() {
+        //     $('#upload-container').imageUploader('destroy');
+        // });
+
+        // 场景7: 动态更新配置并重新初始化
+        // function updateUploader(newConfig) {
+        //     $('#upload-container').imageUploader('destroy');
+        //     $('#upload-container').imageUploader(newConfig);
+        // }
+
+        // 场景8: 监听图片变化并更新其他组件
+        // $('#upload-container').imageUploader({
+        //     onChange: function(images) {
+        //         // 更新预览区域
+        //         updatePreviewArea(images);
+                
+        //         // 更新表单数据
+        //         updateFormData(images);
+                
+        //         // 更新统计信息
+        //         updateStats(images.length);
+        //     }
+        // });
+
+        // 场景9: 结合其他插件使用
+        // function initWithSortable() {
+        //     $('#upload-container').imageUploader({
+        //         // ... 其他配置
+        //     });
+            
+        //     // 使图片列表可拖动排序
+        //     $('.iu-image-list').sortable({
+        //         items: '.iu-image-item',
+        //         update: function() {
+        //             const images = $('#upload-container').imageUploader('getImageList');
+        //             console.log('排序后的图片列表:', images);
+        //         }
+        //     });
+        // }
+    });
+</script>
 </html>
