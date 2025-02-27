@@ -450,3 +450,94 @@ function initLogTable(dataId) {
 
 
 
+package com.example.demo.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.demo.entity.User;
+import com.example.demo.mapper.UserMapper;
+import com.example.demo.service.UserService;
+import com.example.demo.vo.PageInfo;
+import com.example.demo.vo.QueryParam;
+import com.example.demo.vo.TableDataInfo;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    
+    @Override
+    public TableDataInfo batchQuery(List<QueryParam> queryParams, PageInfo pageInfo) {
+        // 创建查询条件包装器
+        LambdaQueryWrapper<User> finalQueryWrapper = new LambdaQueryWrapper<>();
+        
+        // 设置基础条件（如状态为正常）
+        finalQueryWrapper.eq(User::getStatus, 1);
+        
+        // 如果有查询参数，则构建OR条件组
+        if (queryParams != null && !queryParams.isEmpty()) {
+            // 使用嵌套查询构建OR条件组
+            finalQueryWrapper.and(wrapper -> {
+                for (int i = 0; i < queryParams.size(); i++) {
+                    QueryParam param = queryParams.get(i);
+                    
+                    // 使用or()方法连接多个条件组，第一个条件组不需要OR
+                    if (i > 0) {
+                        wrapper.or();
+                    }
+                    
+                    // 创建一个条件组
+                    wrapper.and(groupWrapper -> {
+                        // 添加姓名条件
+                        if (StringUtils.hasText(param.getName())) {
+                            groupWrapper.eq(User::getName, param.getName());
+                        }
+                        
+                        // 添加年龄条件
+                        if (param.getAge() != null) {
+                            groupWrapper.eq(User::getAge, param.getAge());
+                        }
+                        
+                        // 添加开始时间条件
+                        if (StringUtils.hasText(param.getStartTime())) {
+                            LocalDateTime startTime = LocalDateTime.parse(param.getStartTime() + " 00:00:00", DATE_FORMATTER);
+                            groupWrapper.ge(User::getCreateTime, startTime);
+                        }
+                        
+                        // 添加结束时间条件
+                        if (StringUtils.hasText(param.getEndTime())) {
+                            LocalDateTime endTime = LocalDateTime.parse(param.getEndTime() + " 23:59:59", DATE_FORMATTER);
+                            groupWrapper.le(User::getCreateTime, endTime);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 添加排序
+        finalQueryWrapper.orderByDesc(User::getCreateTime);
+        
+        // 创建分页对象
+        Page<User> page = new Page<>(pageInfo.getPageNum(), pageInfo.getPageSize());
+        
+        // 执行分页查询
+        Page<User> resultPage = page(page, finalQueryWrapper);
+        
+        // 构建返回结果
+        TableDataInfo tableData = new TableDataInfo();
+        tableData.setData(resultPage.getRecords());
+        tableData.setTotal(resultPage.getTotal());
+        
+        return tableData;
+    }
+}
+
+
+
