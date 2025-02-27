@@ -347,3 +347,106 @@ function refreshLogTable(dataId) {
 }
 
 
+
+// 初始化主数据表格
+function initTable() {
+    $('#dataTable').bootstrapTable({
+        url: '/api/data/list',                // 数据源URL
+        method: 'post',                       // 请求方法
+        contentType: 'application/x-www-form-urlencoded', // 内容类型
+        toolbar: '#toolbar',                  // 工具栏选择器
+        striped: true,                        // 是否显示行间隔色
+        cache: false,                         // 是否使用缓存
+        pagination: true,                     // 是否显示分页
+        sortable: true,                       // 是否启用排序
+        sortOrder: "asc",                     // 排序方式
+        sidePagination: "server",             // 分页方式：server服务端分页
+        pageNumber: 1,                        // 初始化加载第一页
+        pageSize: 10,                         // 每页的记录行数
+        pageList: [10, 25, 50, 100],          // 可供选择的每页的行数
+        queryParams: function(params) {       // 自定义查询参数
+            return {
+                pageSize: params.limit,       // 页面大小
+                pageNum: params.offset / params.limit + 1, // 页码
+                sortName: params.sort,        // 排序字段
+                sortOrder: params.order,      // 排序方式
+                searchText: params.search     // 搜索关键字
+            };
+        },
+        // 关键部分：处理响应数据
+        responseHandler: function(res) {
+            // 假设后端返回的数据格式为：
+            // {
+            //   "code": 0,
+            //   "msg": "success",
+            //   "rsp": {
+            //     "data": [...], // 实际数据数组
+            //     "total": 100   // 总记录数
+            //   }
+            // }
+            
+            if (res && res.code === 0 && res.rsp && res.rsp.data) {
+                return {
+                    total: res.rsp.total || res.rsp.data.length,  // 总记录数
+                    rows: res.rsp.data  // 数据行
+                };
+            } else {
+                // 处理错误情况
+                console.error("接口返回数据格式不正确", res);
+                return {
+                    total: 0,
+                    rows: []
+                };
+            }
+        },
+        columns: [{
+            checkbox: true
+        }, {
+            field: 'id',
+            title: 'ID',
+            align: 'center',
+            valign: 'middle',
+            sortable: true
+        }, 
+        // 其他列配置...
+        ]
+    });
+}
+
+// 同样，日志表格也需要相应配置
+function initLogTable(dataId) {
+    $('#logTable').bootstrapTable({
+        url: '/api/logs/list',
+        method: 'post',
+        queryParams: function(params) {
+            return {
+                pageSize: params.limit,
+                pageNum: params.offset / params.limit + 1,
+                sortName: params.sort,
+                sortOrder: params.order,
+                dataId: dataId
+            };
+        },
+        responseHandler: function(res) {
+            if (res && res.code === 0 && res.rsp && res.rsp.data) {
+                return {
+                    total: res.rsp.total || res.rsp.data.length,
+                    rows: res.rsp.data
+                };
+            } else {
+                console.error("日志接口返回数据格式不正确", res);
+                return {
+                    total: 0,
+                    rows: []
+                };
+            }
+        },
+        // 其他配置...
+        columns: [
+            // 列配置...
+        ]
+    });
+}
+
+
+
