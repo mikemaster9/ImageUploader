@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>数据列表</title>
+    <!-- Bootstrap 样式表 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css">
+    <!-- Bootstrap Table 样式表 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.18.3/dist/bootstrap-table.min.css">
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <!-- jQuery 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <!-- Bootstrap 核心 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+    <!-- Bootstrap Table 插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.18.3/dist/bootstrap-table.min.js"></script>
+    <!-- Bootstrap Table 中文语言包 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.18.3/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+    <!-- Layer 弹出层插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/layer@3.5.1/dist/layer.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>数据列表</h2>
+        <!-- 工具栏 -->
+        <div id="toolbar">
+            <button id="btn_add" class="btn btn-primary">
+                <i class="fa fa-plus"></i> 新增
+            </button>
+        </div>
+        <!-- 主数据表格 -->
+        <table id="dataTable"></table>
+    </div>
+
+    <!-- 日志表格模板 - 这是弹出层中将要显示的内容 -->
+    <script id="logTableTemplate" type="text/html">
+        <div style="padding: 15px;">
+            <!-- 日志表格 -->
+            <table id="logTable" class="table table-bordered"></table>
+            
+            <!-- 添加刷新按钮 -->
+            <div class="text-center" style="margin-top: 10px;">
+                <button id="refreshLogTable" class="btn btn-primary">
+                    <i class="fa fa-refresh"></i> 刷新日志
+                </button>
+            </div>
+        </div>
+    </script>
+
+    <script th:inline="javascript">
+        // 页面加载完成后执行
+        $(function() {
+            // 初始化主数据表格
+            initTable();
+            
+            // 为新增按钮绑定事件（如果需要）
+            $("#btn_add").click(function() {
+                // 实现新增功能
+                layer.msg('点击了新增按钮');
+            });
+        });
+
+        // 初始化主数据表格
+        function initTable() {
+            $('#dataTable').bootstrapTable({
+                url: '/api/data/list',                // 数据源URL
+                method: 'get',                        // 请求方法
+                toolbar: '#toolbar',                  // 工具栏选择器
+                striped: true,                        // 是否显示行间隔色
+                cache: false,                         // 是否使用缓存
+                pagination: true,                     // 是否显示分页
+                sortable: true,                       // 是否启用排序
+                sortOrder: "asc",                     // 排序方式
+                sidePagination: "server",             // 分页方式：client客户端分页，server服务端分页
+                pageNumber: 1,                        // 初始化加载第一页
+                pageSize: 10,                         // 每页的记录行数
+                pageList: [10, 25, 50, 100],          // 可供选择的每页的行数
+                search: true,                         // 是否显示表格搜索
+                strictSearch: false,                  // 是否全匹配搜索
+                showColumns: true,                    // 是否显示所有的列
+                showRefresh: true,                    // 是否显示刷新按钮
+                minimumCountColumns: 2,               // 最少允许的列数
+                clickToSelect: true,                  // 是否启用点击选中行
+                uniqueId: "id",                       // 每一行的唯一标识，一般为主键列
+                showToggle: true,                     // 是否显示详细视图和列表视图的切换按钮
+                showExport: true,                     // 是否显示导出按钮
+                exportDataType: 'all',                // 导出数据类型
+                columns: [{
+                    checkbox: true                    // 显示复选框
+                }, {
+                    field: 'id',                      // 字段名
+                    title: 'ID',                      // 标题
+                    align: 'center',                  // 水平对齐方式
+                    valign: 'middle',                 // 垂直对齐方式
+                    sortable: true                    // 是否可排序
+                }, {
+                    field: 'name',
+                    title: '名称',
+                    align: 'center',
+                    valign: 'middle'
+                }, {
+                    field: 'description',
+                    title: '描述',
+                    align: 'center',
+                    valign: 'middle'
+                }, {
+                    field: 'createTime',
+                    title: '创建时间',
+                    align: 'center',
+                    valign: 'middle',
+                    sortable: true
+                }, {
+                    title: '操作',                    // 操作列标题
+                    align: 'center',
+                    valign: 'middle',
+                    formatter: function(value, row, index) {
+                        // 生成操作按钮
+                        var actions = [];
+                        actions.push('<a class="btn btn-primary btn-xs" href="javascript:void(0)" onclick="edit(\'' + row.id + '\')"><i class="fa fa-edit"></i> 编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs" href="javascript:void(0)" onclick="remove(\'' + row.id + '\')"><i class="fa fa-trash"></i> 删除</a> ');
+                        actions.push('<a class="btn btn-info btn-xs" href="javascript:void(0)" onclick="viewLogs(\'' + row.id + '\')"><i class="fa fa-list"></i> 查看日志</a>');
+                        return actions.join('');
+                    }
+                }]
+            });
+        }
+
+        // 当前打开的日志弹窗的数据ID
+        var currentLogDataId;
+        // 当前打开的日志弹窗的索引
+        var currentLogLayerIndex;
+
+        // 查看日志方法
+        function viewLogs(id) {
+            // 保存当前查看的数据ID，用于后续刷新
+            currentLogDataId = id;
+            
+            // 打开弹出层
+            currentLogLayerIndex = layer.open({
+                type: 1,                          // 1表示页面层
+                title: '操作日志',                 // 标题
+                area: ['80%', '80%'],             // 宽高
+                content: $('#logTableTemplate').html(), // 内容
+                success: function(layero, index) {
+                    // 弹出层加载完成后执行
+                    
+                    // 初始化日志表格
+                    initLogTable(id);
+                    
+                    // 为刷新按钮绑定事件
+                    $(layero).find('#refreshLogTable').on('click', function() {
+                        refreshLogTable(id);
+                    });
+                }
+            });
+        }
+
+        // 初始化日志表格
+        function initLogTable(dataId) {
+            $('#logTable').bootstrapTable({
+                url: '/api/logs/list?dataId=' + dataId,  // 数据源URL，带上数据ID参数
+                method: 'get',                        // 请求方法
+                striped: true,                        // 是否显示行间隔色
+                cache: false,                         // 是否使用缓存
+                pagination: true,                     // 是否显示分页
+                sortable: true,                       // 是否启用排序
+                sortOrder: "desc",                    // 排序方式，默认降序显示最新日志
+                sidePagination: "server",             // 分页方式：server服务端分页
+                pageNumber: 1,                        // 初始化加载第一页
+                pageSize: 10,                         // 每页的记录行数
+                pageList: [10, 25, 50, 100],          // 可供选择的每页的行数
+                minimumCountColumns: 2,               // 最少允许的列数
+                clickToSelect: true,                  // 是否启用点击选中行
+                uniqueId: "id",                       // 每一行的唯一标识，一般为主键列
+                columns: [{
+                    field: 'id',
+                    title: '日志ID',
+                    align: 'center',
+                    valign: 'middle'
+                }, {
+                    field: 'dataId',
+                    title: '数据ID',
+                    align: 'center',
+                    valign: 'middle'
+                }, {
+                    field: 'operationType',
+                    title: '操作类型',
+                    align: 'center',
+                    valign: 'middle'
+                }, {
+                    field: 'operationContent',
+                    title: '操作内容',
+                    align: 'center',
+                    valign: 'middle'
+                }, {
+                    field: 'operationUser',
+                    title: '操作人',
+                    align: 'center',
+                    valign: 'middle'
+                }, {
+                    field: 'operationTime',
+                    title: '操作时间',
+                    align: 'center',
+                    valign: 'middle',
+                    sortable: true
+                }]
+            });
+        }
+        
+        // 刷新日志表格
+        function refreshLogTable(dataId) {
+            $('#logTable').bootstrapTable('refresh', {
+                url: '/api/logs/list?dataId=' + dataId
+            });
+            
+            // 显示刷新成功提示
+            layer.msg('日志数据已刷新', {icon: 1, time: 1000});
+        }
+
+        // 编辑方法
+        function edit(id) {
+            // 实现编辑功能
+            layer.msg('编辑ID：' + id);
+            
+            // 这里可以实现编辑逻辑，例如打开编辑表单等
+        }
+
+        // 删除方法
+        function remove(id) {
+            // 弹出确认框
+            layer.confirm('确认要删除选中的记录吗？', {
+                btn: ['确定', '取消']
+            }, function() {
+                // 点击确定后执行
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/data/delete',
+                    data: {
+                        'id': id
+                    },
+                    success: function(result) {
+                        if (result.code === 0) {
+                            // 删除成功
+                            layer.msg('删除成功', {
+                                icon: 1,
+                                time: 1000
+                            }, function() {
+                                // 刷新主数据表格
+                                $('#dataTable').bootstrapTable('refresh');
+                                
+                                // 如果当前正在查看该条数据的日志，则关闭日志弹窗
+                                if (currentLogDataId === id && currentLogLayerIndex) {
+                                    layer.close(currentLogLayerIndex);
+                                }
+                            });
+                        } else {
+                            // 删除失败
+                            layer.msg(result.msg, {
+                                icon: 2,
+                                time: 1000
+                            });
+                        }
+                    }
+                });
+            });
+        }
+        
+        // 如果需要从外部刷新日志表格（比如在其他操作后需要刷新日志）
+        function refreshCurrentLogTable() {
+            if (currentLogDataId && $('#logTable').length > 0) {
+                refreshLogTable(currentLogDataId);
+            }
+        }
+    </script>
+</body>
+</html>
